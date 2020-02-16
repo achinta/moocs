@@ -165,6 +165,7 @@ def skipgram(currentCenterWord, windowSize, outsideWords, word2Ind,
 
 
     ### YOUR CODE HERE
+    centerWordIdx = word2Ind[currentCenterWord]
     centerWordVec = centerWordVectors[word2Ind[currentCenterWord]]
     for outsideWord in outsideWords:
         outsideWordIdx = word2Ind[outsideWord]
@@ -173,7 +174,7 @@ def skipgram(currentCenterWord, windowSize, outsideWords, word2Ind,
 
 
         loss += loss_tmp
-        gradCenterVecs += gradCenterVecs_tmp
+        gradCenterVecs[centerWordIdx] += gradCenterVecs_tmp
         gradOutsideVectors += gradOutsideVectors_tmp
     ### END YOUR CODE
 
@@ -226,7 +227,6 @@ def test_word2vec():
     random.seed(31415)
     np.random.seed(9265)
     dummy_vectors = normalizeRows(np.random.randn(10,3))
-    print(f'dummy_vectorys {dummy_vectors}')
     dummy_tokens = dict([("a",0), ("b",1), ("c",2),("d",3),("e",4)])
 
     print("==== Gradient check for skip-gram with naiveSoftmaxLossAndGradient ====")

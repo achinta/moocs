@@ -13,7 +13,6 @@ def gradcheck_naive(f, x, gradientText):
     x -- the point (numpy array) to check the gradient at
     gradientText -- a string detailing some context about the gradient computation
     """
-    print(' in gradcheck naive')
 
     rndstate = random.getstate()
     random.setstate(rndstate)
