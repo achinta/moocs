@@ -72,8 +72,14 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.Linear
         ###     Dropout Layer:
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.Dropout
-
-
+        self.encoder = nn.LSTM(embed_size, hidden_size, bidirectional=True)
+        self.decoder = nn.LSTM(embed_size, hidden_size)
+        self.h_projection = nn.Linear(2 * hidden_size, hidden_size, bias=False)
+        self.c_projection = nn.Linear(2 * hidden_size, hidden_size, bias=False)
+        self.att_projection = nn.Linear(hidden_size, 2 * hidden_size, bias=False)
+        self.combined_output_projection = nn.Linear(3 * hidden_size, hidden_size, bias=False)
+        self.target_vocab_projection = nn.Linear(hidden_size, len(vocab.tgt))
+        self.dropout = nn.Dropout(dropout_rate)
         ### END YOUR CODE
 
 
@@ -162,8 +168,20 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.cat
         ###     Tensor Permute:
         ###         https://pytorch.org/docs/stable/tensors.html#torch.Tensor.permute
+        X = self.model_embeddings.source(source_padded)
+        print('x.size: ', X.size())
+        X = pack_padded_sequence(X, source_lengths)
+        enc_hiddens, (last_hidden, last_cell) = self.encoder(X)
+        enc_hiddens, _ = pad_packed_sequence(enc_hiddens)
+        enc_hiddens = torch.transpose(enc_hiddens, 0, 1)
+        # print(f'enc_hiddens.shape - {enc_hiddens.size()}')
+        # enc_hiddens = pad_packed_sequence(enc_hiddens)
+        last_hidden = torch.cat(torch.chunk(last_hidden, chunks=2, dim=0), dim=2).squeeze()
+        last_cell = torch.cat(torch.chunk(last_cell, chunks=2, dim=0), dim=2).squeeze()
 
-
+        init_decoder_hidden = self.h_projection(last_hidden)
+        init_decoder_cell = self.c_projection(last_cell)
+        dec_init_state = (init_decoder_hidden, init_decoder_cell)
         ### END YOUR CODE
 
         return enc_hiddens, dec_init_state

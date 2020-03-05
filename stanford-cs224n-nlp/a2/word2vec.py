@@ -17,7 +17,7 @@ def sigmoid(x):
     """
 
     ### YOUR CODE HERE
-    s = 1 / (1 + np.exp(-x))
+    s = 1. / (1. + np.exp(-x))
 
     ### END YOUR CODE
 
@@ -110,16 +110,34 @@ def negSamplingLossAndGradient(
     indices = [outsideWordIdx] + negSampleWordIndices
 
     ### YOUR CODE HERE
+    loss = 0
     # look into definition of negative sampling in notes wordvecs1
-    yhats = [sigmoid(np.dot(outsideVectors[idx],centerWordVec)) for idx in indices]
-    loss_pos = [-np.log(yhats[0])]
-    loss_neg = [-np.log(1-yhats[idx]) for idx in indices[1:]]
-    loss = sum(loss_pos + loss_neg)
+    o_vector = outsideVectors[outsideWordIdx]
+    neg_vector = outsideVectors[negSampleWordIndices]
 
-    gradCenterVec = -(1-yhats[0])*outsideVectors[outsideWordIdx]
-    gradOutsideVecs = np.zeros(outsideVectors.shape)
-    for idx in indices[1:]:
-        gradOutsideVecs[idx] = -(1-yhats[idx])*centerWordVec
+    value_outside = o_vector.dot(centerWordVec)
+    value_negative = neg_vector.dot(centerWordVec)
+
+    yhat_pos = sigmoid(value_outside)
+    yhats_neg = sigmoid(-value_negative)
+
+    # print(f'p_outside - {yhats_pos} p_neg - {yhats_neg}')
+    loss = - (np.log(yhat_pos) + np.sum(np.log(yhats_neg)))
+
+    # gradCenterVec = -(1-yhats[0])*outsideVectors[outsideWordIdx]
+    gradCenterVec = np.zeros_like(centerWordVec)
+    gradOutsideVecs = np.zeros_like(outsideVectors)
+
+    gradCenterVec = (yhat_pos - 1) * outsideVectors[outsideWordIdx] \
+                    + np.sum((1 - yhats_neg)[:, np.newaxis] * outsideVectors[negSampleWordIndices], axis = 0)
+
+    gradOutsideVecs = np.zeros_like(outsideVectors)
+
+    gradOutsideVecs[outsideWordIdx] = (yhat_pos - 1) * centerWordVec
+    for i, neg_index in enumerate(negSampleWordIndices):
+        gradOutsideVecs[neg_index] += (1 - yhats_neg[i]) * centerWordVec # remember negative can appear multiple times
+
+
     ### Please use your implementation of sigmoid in here.
 
 
